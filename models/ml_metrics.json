@@ -1,0 +1,19 @@
+{
+  "read_authenticity_mlp": {
+    "accuracy": 0.8963,
+    "f1": 0.9387,
+    "roc_auc": 0.8994,
+    "n_train": 16200,
+    "n_test": 5400
+  },
+  "damage_profile_cnn": {
+    "accuracy": 0.7778,
+    "n_train": 54,
+    "n_test": 18,
+    "classes": [
+      "modern",
+      "mild damage",
+      "authentic ancient"
+    ]
+  }
+}

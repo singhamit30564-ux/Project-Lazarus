@@ -1,0 +1,9 @@
+streamlit>=1.36
+numpy>=1.26
+pandas>=2.0
+scipy>=1.11
+scikit-learn>=1.4
+plotly>=5.20
+torch>=2.2
+gymnasium>=0.29
+pytest>=8.0
