@@ -17,6 +17,7 @@ from lazarus.rl.genome_env import (
     PileupGreedy, GenomeGapFillEnv, QualityAware, RandomFiller, ReferenceGreedy,
     RegistrationRule, evaluate_policy, run_episode,
 )
+from lazarus.titan.ui import dr_titan
 from lazarus.viz import plots
 
 st.set_page_config(page_title="Genome Reconstruction RL · Lazarus", page_icon="🤖", layout="wide")
@@ -31,6 +32,8 @@ st.caption(
     "reference-greedy, pileup-greedy and quality heuristics (and stay competitive with a "
     "hand-crafted registration rule)."
 )
+
+dr_titan("rl", note="Tools #16–28 · Division II")
 
 has_weights = WEIGHTS_DQN.exists()
 

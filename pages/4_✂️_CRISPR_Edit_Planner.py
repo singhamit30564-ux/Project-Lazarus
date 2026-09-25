@@ -13,6 +13,7 @@ import streamlit as st
 from lazarus import ui_common as ui
 from lazarus.core.crispr import plan_edits, translate
 from lazarus.data.species_db import GENE_TEMPLATES
+from lazarus.titan.ui import dr_titan
 from lazarus.viz import plots
 
 st.set_page_config(page_title="CRISPR Edit Planner · Lazarus", page_icon="✂️", layout="wide")
@@ -25,6 +26,8 @@ st.caption(
     "ancestor's protein, then propose SpCas9 guide RNAs — with a prime-editing fallback when "
     "PAM geometry fails. Simplified scoring heuristics: validate with production design tools."
 )
+
+dr_titan("crispr", note="Tools #63–74 · Division VI")
 
 with st.sidebar:
     ui.section("Template")

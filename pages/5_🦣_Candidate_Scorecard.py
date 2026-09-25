@@ -13,6 +13,7 @@ from lazarus import ui_common as ui
 from lazarus.data.species_db import (
     DEFAULT_WEIGHTS, FACTOR_META, SPECIES, candidate_score, ranked,
 )
+from lazarus.titan.ui import dr_titan
 from lazarus.viz import plots
 
 st.set_page_config(page_title="Candidate Scorecard · Lazarus", page_icon="🦣", layout="wide")
@@ -25,6 +26,8 @@ st.caption(
     "proximity, reproductive tractability, ecosystem readiness and ethics. Move the weights — "
     "watch the leaderboard re-rank in real time."
 )
+
+dr_titan("scorecard", note="Tools #85–96 · Division VIII")
 
 with st.sidebar:
     ui.section("Factor weights")

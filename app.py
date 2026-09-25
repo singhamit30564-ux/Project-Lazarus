@@ -12,6 +12,7 @@ import streamlit as st
 from lazarus.config import EVAL_RL, HISTORY_RL, METRICS_ML, MODELS_DIR, WEIGHTS_AUTHENTICITY, WEIGHTS_DAMAGE_CNN, WEIGHTS_DQN
 from lazarus.data.species_db import FACTOR_META, SPECIES, DEFAULT_WEIGHTS, ranked
 from lazarus import ui_common as ui
+from lazarus.titan.ui import dr_titan
 
 st.set_page_config(
     page_title="Project Lazarus · De-Extinction Intelligence Suite",
@@ -49,6 +50,8 @@ ui.kpi_row([
 ])
 
 st.write("")
+
+dr_titan("home")
 
 # ---------------------------------------------------------------------------
 # The Lazarus pipeline

@@ -14,6 +14,7 @@ from lazarus import ui_common as ui
 from lazarus.core import adna
 from lazarus.data.synthetic import PRESETS, Read, ReadSet, simulate_read_set
 from lazarus.ml.inference import get_models, reload_models
+from lazarus.titan.ui import dr_titan
 from lazarus.viz import plots
 
 st.set_page_config(page_title="Ancient DNA Analyzer · Lazarus", page_icon="🧬", layout="wide")
@@ -25,6 +26,8 @@ st.caption(
     "Terminal misincorporation profiles, fragmentomics, contamination and an "
     "authenticity verdict — the mapDamage/PMDtools workflow with an ML read classifier on top."
 )
+
+dr_titan("adna", note="Tools #1–13 · Division I")
 
 models = get_models()
 ml_badge = "ML online" if models.has_auth else "ML offline — heuristics only"

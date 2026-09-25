@@ -14,6 +14,7 @@ from lazarus.core.phylogeny import (
     classical_mds, distance_matrix, neighbor_joining, simulate_lineage_sequences, to_newick,
 )
 from lazarus.data.species_db import SPECIES
+from lazarus.titan.ui import dr_titan
 from lazarus.viz import plots
 
 st.set_page_config(page_title="Phylogenetic Placement · Lazarus", page_icon="🌳", layout="wide")
@@ -25,6 +26,8 @@ st.caption(
     "Drop a degraded ancient library among candidate relatives: Mash-style k-mer distances → "
     "neighbor-joining cladogram → classical MDS embedding. Where does your specimen belong?"
 )
+
+dr_titan("phylo", note="Tools #29–40 · Division III")
 
 with st.sidebar:
     ui.section("Reference panel")

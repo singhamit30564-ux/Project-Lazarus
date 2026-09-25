@@ -148,6 +148,40 @@ def test_env_deterministic_with_seed():
     assert i1["gap_positions"] == i2["gap_positions"]
 
 
+# --------------------------------------------------------------------------- funcgen
+
+def test_funcgen_orf_and_translate():
+    from lazarus.core import funcgen as fg
+    from lazarus.data.species_db import GENE_TEMPLATES
+    dna = GENE_TEMPLATES["mammoth_hbb"].donor_dna
+    orfs = fg.six_frame_orfs(dna, 30)
+    assert any(o["aa_len"] > 100 for o in orfs)
+    assert fg.codon_usage(dna) and 0 < fg.cai(dna) <= 1
+
+
+def test_funcgen_protein_and_motifs():
+    from lazarus.core import funcgen as fg
+    props = fg.protein_props("MVHLTPEEKS")
+    assert props["mw"] > 1000 and 4 < props["pi"] < 11
+    assert fg.tm_helices("K" * 5 + "LIVAFLLIVAFLLIVAFLLIVAF" + "K" * 5)
+    assert any(h["motif"] == "N-glycosylation" for h in fg.find_motifs("MANKTSTP"))
+
+
+def test_registry_counts():
+    from lazarus.registry import DIVISIONS, TOOLS, status_counts
+    assert len(TOOLS) == 115
+    assert len(DIVISIONS) == 10
+    assert sum(status_counts().values()) == 115
+    assert all(t.division in DIVISIONS for t in TOOLS)
+
+
+def test_titan_tips_every_console():
+    from lazarus.titan.tips import tips_for
+    for key in ("home", "adna", "phylo", "rl", "crispr", "scorecard", "palette",
+                "funcgen", "generic"):
+        assert len(tips_for(key)) >= 3
+
+
 # --------------------------------------------------------------------------- species db
 
 def test_scores_and_ranking():
