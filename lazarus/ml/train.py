@@ -5,6 +5,7 @@ Usage:  python -m lazarus.ml.train
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import numpy as np
 import torch
@@ -18,6 +19,12 @@ from lazarus.config import (
 from lazarus.data.synthetic import ReadSet, PRESETS, simulate_read_set
 from lazarus.ml.features import make_dataset, make_profile_dataset
 from lazarus.ml.models import DamageProfileCNN, ReadAuthenticityMLP, save_checkpoint
+
+
+def _stratify_or_none(y: np.ndarray) -> np.ndarray | None:
+    """Stratify only when every class has at least 2 members (sklearn requirement)."""
+    _, counts = np.unique(y, return_counts=True)
+    return y if counts.size and counts.min() >= 2 else None
 
 
 def _simulate_corpus(n_sets: int = 72, n_reads: int = 300, seed: int = 11) -> list[ReadSet]:
@@ -43,9 +50,15 @@ def _simulate_corpus(n_sets: int = 72, n_reads: int = 300, seed: int = 11) -> li
     return sets
 
 
-def train_authenticity(sets: list[ReadSet], epochs: int = 12, seed: int = 0) -> dict:
+def train_authenticity(
+    sets: list[ReadSet],
+    epochs: int = 12,
+    seed: int = 0,
+    out_path: Path | None = None,
+) -> dict:
     X, y = make_dataset(sets)
-    Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=0.25, stratify=y, random_state=seed)
+    Xtr, Xte, ytr, yte = train_test_split(
+        X, y, test_size=0.25, stratify=_stratify_or_none(y), random_state=seed)
     model = ReadAuthenticityMLP()
     opt = torch.optim.Adam(model.parameters(), lr=2e-3)
     loss_fn = nn.CrossEntropyLoss()
@@ -74,15 +87,22 @@ def train_authenticity(sets: list[ReadSet], epochs: int = 12, seed: int = 0) -> 
         "roc_auc": round(float(roc_auc_score(yte, probs[:, 1])), 4),
         "n_train": int(len(Xtr)), "n_test": int(len(Xte)),
     }
-    save_checkpoint(model, WEIGHTS_AUTHENTICITY, {"metrics": metrics})
+    save_checkpoint(model, Path(out_path) if out_path else WEIGHTS_AUTHENTICITY,
+                    {"metrics": metrics})
     return metrics
 
 
-def train_damage_cnn(sets: list[ReadSet], epochs: int = 150, seed: int = 0) -> dict:
+def train_damage_cnn(
+    sets: list[ReadSet],
+    epochs: int = 150,
+    seed: int = 0,
+    out_path: Path | None = None,
+) -> dict:
     X, y = make_profile_dataset(sets, PROFILE_POSITIONS)
     # hold out 25% of libraries
     idx = np.arange(len(y))
-    tr, te = train_test_split(idx, test_size=0.25, stratify=y, random_state=seed)
+    tr, te = train_test_split(idx, test_size=0.25, stratify=_stratify_or_none(y),
+                              random_state=seed)
     model = DamageProfileCNN()
     opt = torch.optim.Adam(model.parameters(), lr=3e-3)
     loss_fn = nn.CrossEntropyLoss()
@@ -104,7 +124,8 @@ def train_damage_cnn(sets: list[ReadSet], epochs: int = 150, seed: int = 0) -> d
         "n_train": int(len(tr)), "n_test": int(len(te)),
         "classes": ["modern", "mild damage", "authentic ancient"],
     }
-    save_checkpoint(model, WEIGHTS_DAMAGE_CNN, {"metrics": metrics})
+    save_checkpoint(model, Path(out_path) if out_path else WEIGHTS_DAMAGE_CNN,
+                    {"metrics": metrics})
     return metrics
 
 

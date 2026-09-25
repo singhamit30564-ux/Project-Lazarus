@@ -12,6 +12,7 @@ import streamlit as st
 
 from lazarus import ui_common as ui
 from lazarus.core import adna
+from lazarus.data.importers import import_file
 from lazarus.data.synthetic import PRESETS, Read, ReadSet, simulate_read_set
 from lazarus.ml.inference import get_models, reload_models
 from lazarus.titan.ui import dr_titan
@@ -34,7 +35,8 @@ ml_badge = "ML online" if models.has_auth else "ML offline — heuristics only"
 
 with st.sidebar:
     ui.section("Input source", ml_badge)
-    mode = st.radio("Mode", ["Named specimen presets", "Simulate custom library", "Paste reads (FASTA/FASTQ)"],
+    mode = st.radio("Mode", ["Named specimen presets", "Simulate custom library",
+                             "Paste reads (FASTA/FASTQ)", "Upload file (CSV/PDF/FASTA)"],
                     label_visibility="collapsed")
 
 reads: list[Read] = []
@@ -82,7 +84,7 @@ elif mode == "Simulate custom library":
         st.session_state["adna_note"] = "Custom simulated library"
         st.session_state["adna_gt"] = float(contamination)
 
-else:
+elif mode == "Paste reads (FASTA/FASTQ)":
     pasted = st.text_area(
         "Paste FASTA, FASTQ, or bare sequences (one per line)",
         height=220,
@@ -96,6 +98,32 @@ else:
             st.session_state["adna_reads"] = parsed
             st.session_state["adna_note"] = "user-pasted reads (reference-free)"
             st.session_state["adna_gt"] = None
+
+else:
+    st.markdown(
+        "Upload a **CSV**, **TSV**, **FASTA**, **FASTQ**, **JSON** or a **PDF** methods dump — "
+        "the importer finds the sequence columns/records and hands you authenticated reads."
+    )
+    up = st.file_uploader(
+        "Sequence file",
+        type=["csv", "tsv", "txt", "fasta", "fa", "fna", "fq", "fastq", "json", "pdf"],
+        label_visibility="collapsed",
+    )
+    if up is not None:
+        res = import_file(up, up.name)
+        if res.n:
+            st.session_state["adna_reads"] = res.reads
+            st.session_state["adna_note"] = (f"{up.name} · {res.meta.get('format', '?')} "
+                                             f"(reference-free)")
+            st.session_state["adna_gt"] = None
+            st.session_state["adna_quals"] = res.quals
+            with st.expander("Import notes", expanded=False):
+                for n in res.notes:
+                    st.caption(f"· {n}")
+        else:
+            st.error("No sequences recovered from that file.")
+            for n in res.notes:
+                st.caption(f"· {n}")
 
 reads = st.session_state.get("adna_reads", [])
 if not reads:
