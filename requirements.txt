@@ -6,4 +6,5 @@ scikit-learn>=1.4
 plotly>=5.20
 torch>=2.2
 gymnasium>=0.29
+pypdf>=4.0
 pytest>=8.0

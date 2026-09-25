@@ -10,6 +10,7 @@ import pandas as pd
 import streamlit as st
 
 from lazarus import ui_common as ui
+from lazarus.core import wetlab
 from lazarus.data.species_db import (
     DEFAULT_WEIGHTS, FACTOR_META, SPECIES, candidate_score, ranked,
 )
@@ -85,8 +86,95 @@ with c2:
     for f in sp.fun_facts:
         st.markdown(f"- {f}")
 
+st.divider()
+
+# ---------------------------------------------------------------------------
+# #88 — Revival route comparator
+# ---------------------------------------------------------------------------
+ui.section(f"Revival Route Comparator — {sp.emoji} {sp.common}", "tool #88")
+route = wetlab.route_comparator(sp)
+st.markdown(
+    "Every revival programme is a choice between routes that trade **genetic fidelity** against "
+    "**timeline, cost, welfare and scalability**. Scores are illustrative and derived from the "
+    "curated species factors on the left."
+)
+st.plotly_chart(plots.fig_ranking([(r["route"], r["score"]) for r in route["rows"]],
+                                  route["best"]), width='stretch')
+
+st.dataframe(pd.DataFrame([{
+    "route": r["route"],
+    "genetic fidelity": r["genetic_fidelity"],
+    "technical readiness": r["technical_readiness"],
+    "timeline (yr)": r["timeline"],
+    "cost (US$M)": r["cost"],
+    "welfare burden": r["welfare"],
+    "scalability": r["scalability"],
+    "score": r["score"],
+} for r in route["rows"]]), hide_index=True, width='stretch')
+
+with st.expander("What each route really costs you", expanded=False):
+    for r in route["rows"]:
+        st.markdown(f"**{r['route']}** — {r['notes']}")
+st.caption(route["note"])
+
+# ---------------------------------------------------------------------------
+# #89 — Surrogate matchmaker
+# ---------------------------------------------------------------------------
+st.divider()
+ui.section(f"Surrogate Matchmaker — {sp.emoji} {sp.common}", "tool #89")
+sur = wetlab.surrogate_matchmaker(sp)
+st.markdown(
+    "Ranking candidate surrogates by phylogenetic fit, body-mass ratio, husbandry "
+    "availability, welfare burden and fecundity."
+)
+c1, c2 = st.columns([1.3, 1])
+with c1:
+    st.dataframe(pd.DataFrame(sur["rows"]), hide_index=True, width='stretch')
+with c2:
+    st.plotly_chart(plots.fig_radar(
+        {r["surrogate"]: r["score"] / 100.0 for r in sur["rows"]},
+        f"Surrogate fit — {sp.common}"), width='stretch')
+st.success(f"Best available surrogate on these heuristics: **{sur['best']}**.")
+st.caption(sur["note"])
+
+# ---------------------------------------------------------------------------
+# #90 — Ethics review checklist
+# ---------------------------------------------------------------------------
+st.divider()
+ui.section(f"Ethics Review Checklist — {sp.emoji} {sp.common}", "tool #90")
+eth = wetlab.ethics_checklist(sp)
+st.markdown(
+    "An interactive welfare / ecological / social-licence audit. Ratings are pre-seeded from the "
+    "curated species attributes — move them and the score updates live."
+)
+
+ratings: dict[str, int] = {}
+for dkey, dom in eth["domains"].items():
+    with st.expander(f"{dom['label']} · weight {dom['weight']:.2f} · {dom['score']:.0f}/100",
+                     expanded=False):
+        st.caption(dom["blurb"])
+        for item in dom["items"]:
+            ratings[item["id"]] = st.slider(
+                item["text"], 0, 5, int(item["default"]),
+                key=f"eth_{sp.key}_{item['id']}", help=item["guidance"])
+
+live = wetlab.ethics_score_from_ratings(eth["domains"], ratings)
+e1, e2, e3 = st.columns(3)
+e1.metric("Weighted ethics score", f"{live['overall']:.1f} / 100")
+e2.metric("Seeded baseline", f"{eth['overall']:.1f} / 100")
+e3.metric("Weakest domain", live["weakest_label"])
+
+st.plotly_chart(plots.fig_radar({eth["domains"][k]["label"]: v / 100.0
+                                 for k, v in live["per_domain"].items()},
+                                f"Ethics domain profile — {sp.common}"), width='stretch')
+st.markdown(f"<div class='lz-card'><b>{live['verdict']}</b><br>"
+            f"Seeded verdict: {eth['verdict']}</div>", unsafe_allow_html=True)
+st.caption(eth["note"])
+
 st.caption(
     "Factor values are illustrative engineering estimates for decision-support demos, "
-    "not published measurements. Extinction dates and routes follow the public record."
+    "not published measurements. Extinction dates and routes follow the public record. "
+    "The route, surrogate and ethics consoles are planning aids — none of them is a "
+    "costed programme, a veterinary opinion, or an ethics approval."
 )
 ui.footer()

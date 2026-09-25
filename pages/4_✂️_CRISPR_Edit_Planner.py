@@ -11,7 +11,9 @@ import pandas as pd
 import streamlit as st
 
 from lazarus import ui_common as ui
+from lazarus.core import wetlab
 from lazarus.core.crispr import plan_edits, translate
+from lazarus.data.importers import import_file
 from lazarus.data.species_db import GENE_TEMPLATES
 from lazarus.titan.ui import dr_titan
 from lazarus.viz import plots
@@ -31,12 +33,47 @@ dr_titan("crispr", note="Tools #63–74 · Division VI")
 
 with st.sidebar:
     ui.section("Template")
-    mode = st.radio("Input", ["Bundled templates", "Custom sequences"], label_visibility="collapsed")
+    mode = st.radio("Input", ["Bundled templates", "Custom sequences", "Upload file (paired)"],
+                    label_visibility="collapsed")
 
 donor_dna = target_dna = ""
 tpl = None
 
-if mode == "Bundled templates":
+if mode == "Upload file (paired)":
+    st.markdown(
+        "Upload a **paired** file — two equal-length codon-aligned CDS records. CSV columns "
+        "named `donor_cds` / `target_cds`, a two-record FASTA, a PDF methods dump with donor and "
+        "target captions, or JSON keys — all work. The Import Studio can build one for you."
+    )
+    up = st.file_uploader("Paired sequence file",
+                          type=["csv", "tsv", "txt", "fasta", "fa", "fna", "json", "pdf", "fq"])
+    if up is None:
+        st.info("Upload a paired file to plan edits against it.")
+        ui.footer()
+        st.stop()
+    res = import_file(up, up.name)
+    if not res.paired:
+        st.error(
+            f"`{up.name}` parsed as a plain read set ({res.n} sequences), not a donor/target "
+            "pair. Give me two equal-length codon-aligned CDS records — column names like "
+            "`donor_cds` / `target_cds`, or a two-record FASTA."
+        )
+        ui.footer()
+        st.stop()
+    donor_dna = res.meta.get("donor_sequence", "")
+    target_dna = res.meta.get("target_sequence", "")
+    donor_species = res.meta.get("donor_name", "donor")
+    target_species = res.meta.get("target_name", "target")
+    gene_name = res.meta.get("gene", Path(up.name).stem)
+    st.markdown(
+        f"<div class='lz-card'><span class='lz-tag'>{up.name}</span> "
+        f"<span class='lz-tag warn'>{len(donor_dna)} nt donor</span> "
+        f"<span class='lz-tag warn'>{len(target_dna)} nt target</span><br>"
+        f"<b>{gene_name}</b> · donor: {donor_species} → target: {target_species}</div>",
+        unsafe_allow_html=True,
+    )
+
+elif mode == "Bundled templates":
     key = st.selectbox(
         "Edit template",
         list(GENE_TEMPLATES.keys()),
@@ -118,6 +155,96 @@ for s in plan.sites:
         if s.prime:
             st.markdown("**Prime-editing fallback** (pegRNA sketch):")
             st.json(s.prime)
+
+# ---------------------------------------------------------------------------
+# #67 — ssODN HDR template builder
+# ---------------------------------------------------------------------------
+st.divider()
+ui.section("ssODN HDR Template Builder", "tool #67")
+st.markdown(
+    "Single-stranded oligodeoxynucleotide donors for homology-directed repair: ≥40 nt homology "
+    "arms either side, phosphorothioate end-blocks, and — where the sequence allows — silent "
+    "mutations that stop the edited product being cut again by the same guide."
+)
+if not plan.sites:
+    st.info("This pair needs no edits, so there is nothing to build a donor for.")
+else:
+    s1, s2, s3 = st.columns(3)
+    site_pick = s1.selectbox(
+        "Edit site", range(len(plan.sites)),
+        format_func=lambda i: (f"codon {plan.sites[i].edit.codon_index + 1} · "
+                               f"{plan.sites[i].edit.from_aa}→{plan.sites[i].edit.to_aa}"))
+    arm_len = s2.slider("Homology arm (nt per side)", 30, 90, 48, 2)
+    ps_ends = s3.slider("Phosphorothioate end bases", 0, 5, 2)
+
+    ss = wetlab.build_ssodn(plan.donor_dna, plan.sites[site_pick].edit,
+                            arm_len=int(arm_len), ps_ends=int(ps_ends))
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Oligo length", f"{ss['total_len']} nt")
+    m2.metric("Tm (sense)", f"{ss['tm_sense']:.1f} °C")
+    m3.metric("GC", f"{100 * ss['gc']:.1f}%")
+    m4.metric("PAMs in ±25 bp", f"{ss['pam_before']} → {ss['pam_after']}")
+
+    st.markdown("**Sense strand (5′→3′)**")
+    st.code(ss["sense"], language="text")
+    st.markdown("**Antisense strand (5′→3′)**")
+    st.code(ss["antisense"], language="text")
+
+    if ss["blocking_options"]:
+        st.markdown("**Silent blocking substitutions** (same amino acid, breaks the PAM/seed)")
+        st.dataframe(pd.DataFrame(ss["blocking_options"]), hide_index=True, width='stretch')
+    if ss["warnings"]:
+        for w in ss["warnings"]:
+            st.warning(w)
+    st.caption(ss["notes"])
+
+# ---------------------------------------------------------------------------
+# #68 — Whole-CDS guide cascade
+# ---------------------------------------------------------------------------
+st.divider()
+ui.section("Whole-CDS Guide Cascade", "tool #68")
+st.markdown(
+    "Planning dozens of edits across a large coding target? Cluster the codon edits into "
+    "**hubs** that one guide and one donor can service, pick the best guide per hub, then "
+    "schedule the hubs so two cuts never land on top of each other."
+)
+c1, c2, c3 = st.columns(3)
+window = c1.slider("Hub window (bp)", 30, 200, 90, 10)
+max_cut = c2.slider("Max edit→cut distance (bp)", 20, 90, 55, 5)
+min_spacing = c3.slider("Min spacing between hubs (bp)", 10, 80, 30, 5)
+
+try:
+    cascade = wetlab.guide_cascade(plan.donor_dna, plan.target_dna, window=int(window),
+                                   max_cut_distance=int(max_cut), min_spacing=int(min_spacing))
+except ValueError as exc:
+    st.info(str(exc))
+else:
+    k1, k2, k3, k4 = st.columns(4)
+    k1.metric("Codon edits", cascade["n_edits"])
+    k2.metric("Edit hubs", cascade["n_hubs"])
+    k3.metric("Guides designed", cascade["n_guides"])
+    k4.metric("Edit coverage", f"{100 * cascade['coverage']:.0f}%")
+
+    st.dataframe(pd.DataFrame(cascade["rows"]), hide_index=True, width='stretch')
+    st.markdown(f"**Suggested edit order:** {' → '.join(f'hub {i}' for i in cascade['order'])}")
+    if cascade["spacing_conflicts"]:
+        st.warning(f"{cascade['spacing_conflicts']} spacing conflict(s) at the requested "
+                   f"minimum of {cascade['min_spacing']} bp — split those hubs across rounds.")
+    st.caption(cascade["warning"])
+
+    with st.expander("Hub detail — alternates & pegRNA fallbacks", expanded=False):
+        for h in cascade["hubs"]:
+            st.markdown(
+                f"**Hub {h['hub']}** · codons {h['codon_span']} · {h['n_edits']} edit(s) · "
+                f"{h['strategy']}")
+            if h["alternates"]:
+                st.dataframe(pd.DataFrame(h["alternates"]), hide_index=True, width='stretch')
+            if h["peg"]:
+                st.json(h["peg"])
+    st.caption(
+        "Multiplexing is where programmes get hard: stagger the hubs over rounds, re-sequence "
+        "between rounds, and expect the last few edits to need prime editing."
+    )
 
 # ---------------------------------------------------------------------------
 st.divider()

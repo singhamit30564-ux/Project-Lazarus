@@ -13,6 +13,7 @@ import streamlit as st
 from lazarus import ui_common as ui
 from lazarus.core import funcgen as fg
 from lazarus.core.crispr import translate
+from lazarus.data.importers import import_file
 from lazarus.data.species_db import GENE_TEMPLATES
 from lazarus.titan.ui import dr_titan
 from lazarus.viz import plots
@@ -33,7 +34,8 @@ SAMPLE = GENE_TEMPLATES["mammoth_hbb"].donor_dna
 
 with st.sidebar:
     ui.section("Input")
-    src = st.radio("Sequence source", ["Bundled sample (HBB-like)", "Paste sequence"],
+    src = st.radio("Sequence source", ["Bundled sample (HBB-like)", "Paste sequence",
+                                       "Upload file"],
                    label_visibility="collapsed")
     tool = st.radio("Tool", [
         "41 · Gene / ORF Finder",
@@ -45,15 +47,41 @@ with st.sidebar:
         "47 · CpG Island Finder",
     ], label_visibility="collapsed")
 
+dna = ""          # always bound — the upload branch may find no file yet
+
 if src == "Bundled sample (HBB-like)":
     dna = SAMPLE
     st.markdown("<div class='lz-card'><span class='lz-tag'>SIMULATED scaffold</span> "
                 "β-globin-like CDS (147 aa) from the mammoth-Hb template.</div>",
                 unsafe_allow_html=True)
-else:
+elif src == "Paste sequence":
     raw = st.text_area("Paste DNA or protein sequence", height=140,
                        placeholder="ATGGTGCATCTG… (DNA) or MVHLTPEEKS… (protein)")
     dna = re.sub(r"[^A-Za-z]", "", raw or "").upper()
+
+else:
+    up = st.file_uploader("CSV / FASTA / FASTQ / PDF / JSON",
+                          type=["csv", "tsv", "txt", "fasta", "fa", "fna", "fq", "fastq",
+                                "json", "pdf"],
+                          label_visibility="collapsed")
+    if up is not None:
+        res = import_file(up, up.name)
+        if res.n:
+            # longest imported record is the most informative thing to annotate
+            best = max(res.reads, key=lambda r: len(r.seq))
+            dna = best.seq
+            st.markdown(
+                f"<div class='lz-card'><span class='lz-tag'>{up.name}</span> "
+                f"<span class='lz-tag warn'>{res.n} record(s)</span> "
+                f"<span class='lz-tag mute'>annotating the longest ({len(dna)} nt)</span></div>",
+                unsafe_allow_html=True,
+            )
+            with st.expander("Import notes", expanded=False):
+                for n in res.notes:
+                    st.caption(f"· {n}")
+        else:
+            st.error("No sequences recovered from that file.")
+            dna = ""
 
 if not dna:
     st.info("Provide a sequence to run a tool.")

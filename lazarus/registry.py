@@ -41,6 +41,11 @@ _P4 = "pages/4_✂️_CRISPR_Edit_Planner.py"
 _P5 = "pages/5_🦣_Candidate_Scorecard.py"
 _P6 = "pages/6_🧫_Functional_Genomics.py"
 _P0 = "pages/0_🔭_Tool_Palette.py"
+_P7 = "pages/7_📥_Import_Studio.py"
+_P8 = "pages/8_🧪_QC_&_Library_Prep.py"
+_P9 = "pages/9_🧩_Assembly_Studio.py"
+_P10 = "pages/10_🌿_Evolution_Workbench.py"
+_P11 = "pages/11_🛠️_Training_&_Ops.py"
 
 TOOLS: tuple[ToolSpec, ...] = (
     # ---------------- I — Paleogenomics Lab ----------------
@@ -51,12 +56,12 @@ TOOLS: tuple[ToolSpec, ...] = (
     ToolSpec(5,  "Contamination Estimator", "I", "live", "ML + heuristic modern-DNA contamination estimates.", "ML", _P1),
     ToolSpec(6,  "Read Authenticity Classifier", "I", "live", "Per-read ancient-vs-modern probabilities (24-dim fragmentomics MLP).", "ML", _P1),
     ToolSpec(7,  "Damage Tier Classifier", "I", "live", "Library-level damage tier from curves (1-D CNN).", "ML", _P1),
-    ToolSpec(8,  "FASTA/FASTQ QC Dashboard", "I", "wave2", "FastQC-style per-base quality & composition dashboard.", "", _P1),
-    ToolSpec(9,  "PMD-Score Calculator", "I", "wave2", "Per-read posterior probability of methylation damage.", "ML", _P1),
-    ToolSpec(10, "Library Complexity Estimator", "I", "wave2", "Preseq-style duplication & complexity curves.", "", _P1),
-    ToolSpec(11, "Duplicate Read Remover", "I", "wave2", "Exact/near duplicate collapse with UMI support.", "", _P1),
-    ToolSpec(12, "Adapter & Quality Trimmer", "I", "wave2", "Sliding-window trimming + adapter clipping.", "", _P1),
-    ToolSpec(13, "UDG-Treatment Comparator", "I", "wave2", "Partial/full UDG effect on damage authentication.", "", _P1),
+    ToolSpec(8,  "FASTA/FASTQ QC Dashboard", "I", "live", "FastQC-style per-base quality & composition dashboard.", "", _P8),
+    ToolSpec(9,  "PMD-Score Calculator", "I", "live", "Per-read posterior probability of methylation damage.", "ML", _P8),
+    ToolSpec(10, "Library Complexity Estimator", "I", "live", "Preseq-style duplication & complexity curves.", "", _P8),
+    ToolSpec(11, "Duplicate Read Remover", "I", "live", "Exact/near duplicate collapse with UMI support.", "", _P8),
+    ToolSpec(12, "Adapter & Quality Trimmer", "I", "live", "Sliding-window trimming + adapter clipping.", "", _P8),
+    ToolSpec(13, "UDG-Treatment Comparator", "I", "live", "Partial/full UDG effect on damage authentication.", "", _P8),
     ToolSpec(14, "Molecular-Clock Age Estimator", "I", "roadmap", "Damage-accumulation age intuition from δD decay.", "", ""),
     ToolSpec(15, "End-Repair Simulator", "I", "roadmap", "Simulate end-repair/blunt/overhang library preps.", "", ""),
 
@@ -65,10 +70,10 @@ TOOLS: tuple[ToolSpec, ...] = (
     ToolSpec(17, "Policy Leaderboard", "II", "live", "DQN vs registration-rule / greedy / pileup / quality / random.", "RL", _P3),
     ToolSpec(18, "Episode Walkthrough", "II", "live", "Step through every base-call decision with truth trace.", "RL", _P3),
     ToolSpec(19, "DQN Training Console", "II", "live", "Curves, checkpoints, warm-start, in-app retraining.", "RL", _P3),
-    ToolSpec(20, "Misregistration Detector", "II", "wave2", "Lag-agreement profile across reference offsets (indel audit).", "", _P3),
-    ToolSpec(21, "Consensus Caller Studio", "II", "wave2", "Majority / Bayesian / PMD-aware consensus comparison.", "", _P3),
-    ToolSpec(22, "Coverage Depth Analyzer", "II", "wave2", "Per-base coverage, breadth/depth, dropout maps.", "", _P3),
-    ToolSpec(23, "K-mer GenomeScope", "II", "wave2", "Genome size, heterozygosity & repeat spectra from k-mers.", "", _P3),
+    ToolSpec(20, "Misregistration Detector", "II", "live", "Lag-agreement profile across reference offsets (indel audit).", "", _P9),
+    ToolSpec(21, "Consensus Caller Studio", "II", "live", "Majority / Bayesian / PMD-aware consensus comparison.", "", _P9),
+    ToolSpec(22, "Coverage Depth Analyzer", "II", "live", "Per-base coverage, breadth/depth, dropout maps.", "", _P9),
+    ToolSpec(23, "K-mer GenomeScope", "II", "live", "Genome size, heterozygosity & repeat spectra from k-mers.", "", _P9),
     ToolSpec(24, "Reference Bias Detector", "II", "roadmap", "Allele-balance shifts toward the reference allele.", "", ""),
     ToolSpec(25, "Reference-Guided Scaffolder", "II", "roadmap", "Order/orient contigs against a misregistration-aware reference.", "", ""),
     ToolSpec(26, "Gap Mapper & N-Atlas", "II", "roadmap", "Gap-size distribution & N-content cartography.", "", ""),
@@ -80,8 +85,8 @@ TOOLS: tuple[ToolSpec, ...] = (
     ToolSpec(30, "k-mer Distance Matrix Explorer", "III", "live", "Mash-style distances + heatmap.", "", _P2),
     ToolSpec(31, "Neighbor-Joining Tree Builder", "III", "live", "NJ cladogram with branch lengths.", "", _P2),
     ToolSpec(32, "Classical MDS Embedding", "III", "live", "Distance geometry scatter of the panel.", "", _P2),
-    ToolSpec(33, "Newick Viewer / Editor", "III", "wave2", "Parse, reroot, prune and export Newick trees.", "", _P2),
-    ToolSpec(34, "Sequence Divergence Simulator", "III", "wave2", "Jukes-Cantor / Kimura / HKY evolution playground.", "", _P2),
+    ToolSpec(33, "Newick Viewer / Editor", "III", "live", "Parse, reroot, prune and export Newick trees.", "", _P10),
+    ToolSpec(34, "Sequence Divergence Simulator", "III", "live", "Jukes-Cantor / Kimura / HKY evolution playground.", "", _P10),
     ToolSpec(35, "Ancestral Sequence Reconstructor", "III", "roadmap", "Marginal reconstruction of internal node sequences.", "ML", ""),
     ToolSpec(36, "Divergence-Time Estimator", "III", "roadmap", "Relaxed-clock toy TMRCA estimates.", "", ""),
     ToolSpec(37, "Introgression Detector (D-stat)", "III", "roadmap", "ABBA-BABA statistics on biallelic sites.", "", ""),
@@ -120,8 +125,8 @@ TOOLS: tuple[ToolSpec, ...] = (
     ToolSpec(64, "SpCas9 Guide Designer", "VI", "live", "20-nt spacers + NGG PAM + position scoring.", "", _P4),
     ToolSpec(65, "Off-Target Seed Scanner", "VI", "live", "PAM-proximal seed repeat risk heuristics.", "", _P4),
     ToolSpec(66, "Prime-Edit pegRNA Designer", "VI", "live", "Nick guide + RTT/PBS fallback sketches.", "", _P4),
-    ToolSpec(67, "ssODN HDR Template Builder", "VI", "wave2", "Donor designs with 40+ bp arms, both strands.", "", _P4),
-    ToolSpec(68, "Whole-CDS Guide Cascade", "VI", "wave2", "Multiplex edit sets across large coding targets.", "", _P4),
+    ToolSpec(67, "ssODN HDR Template Builder", "VI", "live", "Donor designs with 40+ bp arms, both strands.", "", _P4),
+    ToolSpec(68, "Whole-CDS Guide Cascade", "VI", "live", "Multiplex edit sets across large coding targets.", "", _P4),
     ToolSpec(69, "Base Editor Planner", "VI", "roadmap", "CBE/ABE windows & bystander checks.", "", ""),
     ToolSpec(70, "Multiplex Edit Assembler", "VI", "roadmap", "Edit-order & phasing strategy for cascades.", "RL", ""),
     ToolSpec(71, "PAM Atlas", "VI", "roadmap", "SaCas9/Cas12/CasX PAM landscape explorer.", "", ""),
@@ -145,9 +150,9 @@ TOOLS: tuple[ToolSpec, ...] = (
     ToolSpec(85, "Candidate Scorecard", "VIII", "live", "Weighted revival-feasibility ranking (8 species).", "", _P5),
     ToolSpec(86, "Factor Weight Studio", "VIII", "live", "Live multi-criteria weight exploration.", "", _P5),
     ToolSpec(87, "Species Dossier Browser", "VIII", "live", "Extinction stories, relatives, routes, field notes.", "", _P5),
-    ToolSpec(88, "Revival Route Comparator", "VIII", "wave2", "Cloning vs editing vs back-breeding decision matrix.", "", _P5),
-    ToolSpec(89, "Surrogate Matchmaker", "VIII", "wave2", "Gestation/pouch/cycle fit scoring.", "", _P5),
-    ToolSpec(90, "Ethics Review Checklist", "VIII", "wave2", "Interactive welfare/biosafety/social-license audit.", "", _P5),
+    ToolSpec(88, "Revival Route Comparator", "VIII", "live", "Cloning vs editing vs back-breeding decision matrix.", "", _P5),
+    ToolSpec(89, "Surrogate Matchmaker", "VIII", "live", "Gestation/pouch/cycle fit scoring.", "", _P5),
+    ToolSpec(90, "Ethics Review Checklist", "VIII", "live", "Interactive welfare/biosafety/social-license audit.", "", _P5),
     ToolSpec(91, "Genetic Load Calculator", "VIII", "roadmap", "Inbreeding depression & deleterious load.", "", ""),
     ToolSpec(92, "Genetic Rescue Planner", "VIII", "roadmap", "Adaptive introgression candidate tracts.", "ML", ""),
     ToolSpec(93, "Population Viability Simulator", "VIII", "roadmap", "Founding herd PVA with Allee effects.", "RL", ""),
@@ -166,15 +171,15 @@ TOOLS: tuple[ToolSpec, ...] = (
     ToolSpec(104, "Surrogate Cycle Scheduler", "IX", "roadmap", "Estrous/pouch synchronization planner.", "", ""),
 
     # ---------------- X — Data Ops & Platform ----------------
-    ToolSpec(105, "Sequence Format Converter", "X", "wave4", "FASTA/FASTQ/CSV/NEXUS conversions.", "", ""),
-    ToolSpec(106, "Specimen LIMS", "X", "wave4", "Sample registry with provenance fields.", "", ""),
-    ToolSpec(107, "Chain-of-Custody Tracker", "X", "wave4", "Permafrost-to-sequencer audit trail.", "", ""),
+    ToolSpec(105, "Sequence Format Converter", "X", "live", "FASTA/FASTQ/CSV/NEXUS conversions.", "", _P7),
+    ToolSpec(106, "Specimen LIMS", "X", "live", "Sample registry with provenance fields.", "", _P7),
+    ToolSpec(107, "Chain-of-Custody Tracker", "X", "live", "Permafrost-to-sequencer audit trail.", "", _P7),
     ToolSpec(108, "MIxS Metadata Builder", "X", "wave4", "Genomic standards checklists & export.", "", ""),
     ToolSpec(109, "Batch Pipeline Runner", "X", "wave4", "Chain tools into reproducible workflows.", "", ""),
-    ToolSpec(110, "ML Training Console", "X", "wave2", "Train/eval supervised models from the UI.", "ML", ""),
+    ToolSpec(110, "ML Training Console", "X", "live", "Train/eval supervised models from the UI.", "ML", _P11),
     ToolSpec(111, "RL Training Console", "X", "live", "DQN training, warm-start & benchmarks.", "RL", _P3),
-    ToolSpec(112, "Benchmark Suite Runner", "X", "wave2", "Versioned evals with shipped checkpoints.", "ML+RL", ""),
-    ToolSpec(113, "Report Generator", "X", "wave2", "JSON/CSV/HTML run reports.", "", ""),
+    ToolSpec(112, "Benchmark Suite Runner", "X", "live", "Versioned evals with shipped checkpoints.", "ML+RL", _P11),
+    ToolSpec(113, "Report Generator", "X", "live", "JSON/CSV/HTML run reports.", "", _P11),
     ToolSpec(114, "Tool Palette & Roadmap", "X", "live", "Searchable index of all 115 tools.", "", _P0),
     ToolSpec(115, "Dr. Titan Advisor", "X", "live", "Field notes & science counsel on every console.", "", "all pages"),
 )
@@ -192,6 +197,19 @@ def status_counts() -> dict[str, int]:
     for t in TOOLS:
         counts[t.status] = counts.get(t.status, 0) + 1
     return counts
+
+
+_BY_ID: dict[int, ToolSpec] = {t.tid: t for t in TOOLS}
+
+
+def tool_by_id(tid: int) -> ToolSpec | None:
+    """Look up a tool by its registry id (1..115), or None if it is not registered."""
+    return _BY_ID.get(int(tid))
+
+
+def tools_by_ids(tids) -> list[ToolSpec]:
+    """Batch lookup preserving the requested order and skipping unknown ids."""
+    return [t for t in (tool_by_id(i) for i in tids) if t is not None]
 
 
 def search_tools(query: str, division: str | None = None, status: str | None = None) -> list[ToolSpec]:

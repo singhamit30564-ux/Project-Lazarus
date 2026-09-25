@@ -297,3 +297,201 @@ def fig_ranking(rows: list[tuple[str, float]], highlight: str | None = None) -> 
     ))
     fig.update_xaxes(range=[0, 100], title="revival feasibility score")
     return _finish(fig, "De-extinction candidate ranking")
+
+
+# ---------------------------------------------------------------------------
+# Wave 2 — QC / library prep (#8–#13)
+# ---------------------------------------------------------------------------
+
+def fig_per_base(qc) -> go.Figure:
+    """FastQC-style per-cycle quality / GC / N traces."""
+    x = np.arange(len(qc.per_pos_quality))
+    fig = make_subplots(specs=[[{"secondary_y": False}]])
+    fig.add_trace(go.Scatter(x=x, y=qc.per_pos_quality, mode="lines+markers",
+                             marker=dict(size=4), line=dict(color=ACCENT, width=3),
+                             name="mean Phred"))
+    fig.add_hline(y=20, line_dash="dash", line_color=AMBER,
+                  annotation_text="Q20", annotation_font_color=AMBER)
+    fig.add_hline(y=30, line_dash="dot", line_color=ACCENT_2,
+                  annotation_text="Q30", annotation_font_color=ACCENT_2)
+    fig.add_trace(go.Scatter(x=x, y=100 * qc.per_pos_gc, mode="lines",
+                             line=dict(color=PURPLE, width=2), name="GC %", yaxis="y2"))
+    fig.add_trace(go.Scatter(x=x, y=100 * qc.per_pos_n, mode="lines",
+                             line=dict(color=RED, width=2), name="N %", yaxis="y2"))
+    fig.update_layout(yaxis2=dict(title="% ", overlaying="y", side="right",
+                                  range=[0, 100], showgrid=False))
+    fig.update_xaxes(title="cycle (bp from 5′ end)")
+    fig.update_yaxes(title="mean Phred", range=[0, 42])
+    return _finish(fig, "Per-base sequence quality" +
+                   (" (simulated qualities)" if qc.simulated_quality else ""))
+
+
+def fig_quality_histogram(quality_hist: np.ndarray, mean_q: float) -> go.Figure:
+    edges = np.linspace(0, 40, len(quality_hist) + 1)
+    centers = (edges[:-1] + edges[1:]) / 2
+    fig = go.Figure(go.Bar(x=centers, y=quality_hist,
+                           marker=dict(color=ACCENT), width=1.4))
+    fig.add_vline(x=mean_q, line_dash="dash", line_color=ACCENT_2,
+                  annotation_text=f"mean Q{mean_q:.1f}", annotation_font_color=ACCENT_2)
+    fig.update_xaxes(title="Phred quality score")
+    fig.update_yaxes(title="bases")
+    return _finish(fig, "Per-sequence quality distribution")
+
+
+def fig_adapter_profile(profile: np.ndarray) -> go.Figure:
+    x = np.arange(len(profile))
+    fig = go.Figure(go.Scatter(x=x, y=100 * profile, mode="lines",
+                               fill="tozeroy", line=dict(color=AMBER, width=2)))
+    fig.update_xaxes(title="cycle")
+    fig.update_yaxes(title="% reads with adapter start")
+    return _finish(fig, "Adapter content by cycle")
+
+
+def fig_pmd_distribution(probs: np.ndarray, threshold: float = 0.9) -> go.Figure:
+    fig = go.Figure(go.Histogram(x=probs, nbinsx=30,
+                                 marker=dict(color=ACCENT, line=dict(color="#0b1210", width=1))))
+    fig.add_vline(x=threshold, line_dash="dash", line_color=ACCENT_2,
+                  annotation_text=f"PMD ≥ {threshold:g} (damage-confident)",
+                  annotation_font_color=ACCENT_2)
+    fig.update_xaxes(title="PMD posterior P(damaged)", range=[0, 1])
+    fig.update_yaxes(title="reads")
+    return _finish(fig, "PMD score distribution")
+
+
+def fig_complexity(curve: dict) -> go.Figure:
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=curve["effort"], y=curve["distinct"], mode="markers",
+                             marker=dict(color=ACCENT, size=8), name="observed distinct"))
+    fig.add_trace(go.Scatter(x=curve["effort"], y=curve["fitted"], mode="lines",
+                             line=dict(color=ACCENT_2, width=3), name="saturation fit"))
+    fig.add_hline(y=curve["complexity_estimate"], line_dash="dash", line_color=PURPLE,
+                  annotation_text=f"complexity ≈ {curve['complexity_estimate']:,.0f}",
+                  annotation_font_color=PURPLE)
+    fig.update_xaxes(title="reads sampled")
+    fig.update_yaxes(title="distinct molecules")
+    return _finish(fig, "Library complexity / rarefaction")
+
+
+def fig_udg_comparison(rows) -> go.Figure:
+    names = [r.treatment for r in rows]
+    fig = make_subplots(rows=1, cols=2, subplot_titles=("Terminal C→T at position 1",
+                                                        "Authenticity score"))
+    fig.add_trace(go.Bar(x=names, y=[r.ct_pos0 for r in rows],
+                         marker=dict(color=PURPLE), name="C→T pos 0"), row=1, col=1)
+    colors = [ACCENT if r.authenticity >= 70 else AMBER if r.authenticity >= 45 else RED
+              for r in rows]
+    fig.add_trace(go.Bar(x=names, y=[r.authenticity for r in rows],
+                         marker=dict(color=colors), name="authenticity"), row=1, col=2)
+    fig.update_yaxes(range=[0, 100], row=1, col=2)
+    fig.update_layout(height=420)
+    fig.update_xaxes(tickangle=-12)
+    return _finish(fig, "UDG treatment comparison")
+
+
+# ---------------------------------------------------------------------------
+# Wave 2 — assembly studio (#20–#23)
+# ---------------------------------------------------------------------------
+
+def fig_lag_heatmap(profile: np.ndarray, lags) -> go.Figure:
+    fig = go.Figure(go.Heatmap(
+        z=profile.T, x=np.arange(profile.shape[0]), y=[str(k) for k in lags],
+        colorscale=[[0, "#0b1210"], [0.5, "#1f6f54"], [1, ACCENT_2]],
+        hovertemplate="pos %{x} · lag %{y}: %{z:.2f}<extra></extra>",
+        colorbar=dict(title="agreement"),
+    ))
+    fig.update_xaxes(title="genome position")
+    fig.update_yaxes(title="reference lag (bp)")
+    fig.update_layout(height=330)
+    return _finish(fig, "Lag-agreement profile — bright band = local reference offset")
+
+
+def fig_lag_zones(best_lag: np.ndarray, true_offsets=None) -> go.Figure:
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=np.arange(len(best_lag)), y=best_lag, mode="lines",
+                             line=dict(color=ACCENT, width=3, shape="hv"),
+                             name="detected lag"))
+    if true_offsets is not None:
+        t = np.asarray(true_offsets, dtype=float)[: len(best_lag)]
+        fig.add_trace(go.Scatter(x=np.arange(len(t)), y=t, mode="lines",
+                                 line=dict(color=AMBER, width=2, dash="dot", shape="hv"),
+                                 name="true offset (simulated)"))
+    fig.update_xaxes(title="genome position")
+    fig.update_yaxes(title="offset (bp)", title_font=dict(size=12))
+    fig.update_layout(height=300)
+    return _finish(fig, "Detected reference offset per position")
+
+
+def fig_coverage(depth: np.ndarray, bin_size: int = 1) -> go.Figure:
+    x = np.arange(len(depth))
+    fig = go.Figure(go.Scatter(x=x, y=depth, mode="lines", fill="tozeroy",
+                               line=dict(color=ACCENT, width=1)))
+    mean = float(np.mean(depth)) if len(depth) else 0.0
+    fig.add_hline(y=mean, line_dash="dash", line_color=ACCENT_2,
+                  annotation_text=f"mean {mean:.1f}×", annotation_font_color=ACCENT_2)
+    fig.add_hline(y=5, line_dash="dot", line_color=AMBER,
+                  annotation_text="5× genotype threshold", annotation_font_color=AMBER)
+    fig.update_xaxes(title="genome position")
+    fig.update_yaxes(title="read depth")
+    fig.update_layout(height=330)
+    return _finish(fig, "Per-base coverage depth")
+
+
+def fig_kmer_spectrum(spec: dict) -> go.Figure:
+    fig = make_subplots(rows=1, cols=2, subplot_titles=("k-mer multiplicity spectrum",
+                                                        "spectrum (log y)"))
+    fig.add_trace(go.Bar(x=spec["hist_x"], y=spec["hist_y"],
+                         marker=dict(color=ACCENT), name="linear"), row=1, col=1)
+    fig.add_trace(go.Bar(x=spec["hist_x"], y=spec["hist_y"],
+                         marker=dict(color=PURPLE), name="log"), row=1, col=2)
+    peak = spec["peak_coverage"]
+    for col in (1, 2):
+        fig.add_vline(x=peak, line_dash="dash", line_color=ACCENT_2, row=1, col=col,
+                      annotation_text=f"homozygous peak {peak}×",
+                      annotation_font_color=ACCENT_2)
+    fig.update_yaxes(type="log", row=1, col=2)
+    fig.update_xaxes(title="multiplicity", row=1, col=1)
+    fig.update_xaxes(title="multiplicity", row=1, col=2)
+    fig.update_yaxes(title="distinct k-mers", row=1, col=1)
+    fig.update_layout(height=400, showlegend=False)
+    return fig.update_layout(**{k: v for k, v in LAYOUT.items() if k not in ("xaxis", "yaxis")})
+
+
+# ---------------------------------------------------------------------------
+# Wave 2 — evolution workbench (#33, #34)
+# ---------------------------------------------------------------------------
+
+def fig_tree_editor(root, highlight: str | None = None) -> go.Figure:
+    return fig_tree(root, highlight=highlight)
+
+
+def fig_divergence_curve(curve: dict) -> go.Figure:
+    fig = go.Figure()
+    series = [("p_distance", "observed p-distance", TEXT),
+              ("jc69", "JC69", ACCENT),
+              ("k2p", "K2P", ACCENT_2),
+              ("hky", "HKY85", PURPLE)]
+    max_t = max(curve["times"]) if curve["times"] else 1.0
+    fig.add_trace(go.Scatter(x=[0, max_t * 1.05], y=[0, max_t * 1.05], mode="lines",
+                             line=dict(color="#3c4f45", width=2, dash="dash"),
+                             name="true branch length"))
+    for key, label, color in series:
+        ys = curve.get(key) or []
+        if not ys or all(v is None for v in ys):
+            continue
+        fig.add_trace(go.Scatter(x=curve["times"], y=ys, mode="lines+markers",
+                                 marker=dict(size=6), line=dict(color=color, width=3),
+                                 name=label, connectgaps=True))
+    fig.update_xaxes(title="expected substitutions per site (branch length)")
+    fig.update_yaxes(title="distance")
+    return _finish(fig, f"Substitution saturation — {curve['model']} "
+                        f"(κ = {curve['kappa']:g}, {curve['seq_len']:,} bp)")
+
+
+def fig_distance_bars(dists: dict[str, float]) -> go.Figure:
+    names = list(dists.keys())
+    vals = [dists[k] for k in names]
+    colors = [ACCENT, ACCENT_2, PURPLE, AMBER, RED][: len(names)]
+    fig = go.Figure(go.Bar(x=names, y=vals, marker=dict(color=colors),
+                           text=[f"{v:.4f}" for v in vals], textposition="auto"))
+    fig.update_yaxes(title="substitutions per site")
+    return _finish(fig, "Corrected distances between the two sequences")

@@ -25,3 +25,7 @@ venv/
 # Scratch training runs (shipped weights in models/ ARE committed)
 models/runs/
 *.tmp
+
+# Retrain lockers (runtime scratch; shipped weights in models/ are committed)
+models/locker_*/
+lims.sqlite
